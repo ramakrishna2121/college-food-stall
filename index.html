@@ -372,16 +372,17 @@
       card.className = 'review-card';
       card.id = 'card-' + id;
 
-      const stars    = '★'.repeat(data.rating) + '☆'.repeat(5 - data.rating);
+      const safeRating = Math.min(5, Math.max(0, Math.round(data.rating) || 0));
+      const stars    = '★'.repeat(safeRating) + '☆'.repeat(5 - safeRating);
       const timeStr  = data.timestamp ? formatTime(data.timestamp.toDate()) : '—';
 
       card.innerHTML = `
         <div class="review-card-header">
-          <span class="review-name">${escapeHtml(data.name)}</span>
+          <span class="review-name">${escapeHtml(String(data.name || ''))}</span>
           <button class="btn-danger" data-id="${id}">Delete</button>
         </div>
         <div class="review-stars">${stars}</div>
-        <div class="review-text">${escapeHtml(data.text)}</div>
+        <div class="review-text">${escapeHtml(String(data.text || ''))}</div>
         <div class="review-time">${timeStr}</div>
       `;
 
