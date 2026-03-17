@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FOODIES — Leave a Review</title>
+
+  <!-- Firebase (compat mode) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- QR Code generator -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    /* === RESET & BASE === */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #fafafa;
+      color: #222;
+      min-height: 100vh;
+    }
+
+    /* === LAYOUT === */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 32px 16px;
+    }
+
+    /* === TYPOGRAPHY === */
+    h1 { font-size: 28px; font-weight: 800; letter-spacing: 1px; }
+    .subtitle { color: #888; font-size: 13px; margin-top: 4px; }
+    .emoji { font-size: 40px; }
+
+    /* === FORM ELEMENTS === */
+    .form-group { margin-bottom: 16px; }
+    input, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: #f5a623; }
+    textarea { height: 90px; resize: none; }
+
+    /* === BUTTONS === */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn-primary { background: #f5a623; color: #fff; }
+    .btn-dark    { background: #333;    color: #fff; }
+    .btn-danger  { background: #e74c3c; color: #fff; padding: 6px 12px; width: auto; font-size: 13px; border-radius: 6px; }
+
+    /* === STAR RATING === */
+    .stars { display: flex; justify-content: center; gap: 8px; margin: 8px 0 16px; }
+    .star {
+      font-size: 36px;
+      cursor: pointer;
+      color: #ddd;
+      transition: color 0.15s, transform 0.1s;
+      user-select: none;
+    }
+    .star.filled { color: #f5a623; }
+    .star:hover  { transform: scale(1.15); }
+
+    /* === MESSAGES === */
+    .msg { padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: none; }
+    .msg.show { display: block; }
+    .msg-success { background: #fef6e4; color: #b8740a; border: 1px solid #f5d99a; }
+    .msg-error   { background: #fdecea; color: #c0392b; border: 1px solid #f5c6c3; }
+
+    /* === REVIEW CARD (admin) === */
+    .review-card {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+    .review-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+    .review-name  { font-weight: 700; font-size: 15px; }
+    .review-stars { color: #f5a623; font-size: 16px; margin: 2px 0 6px; }
+    .review-text  { color: #444; font-size: 14px; line-height: 1.5; }
+    .review-time  { color: #bbb; font-size: 11px; margin-top: 6px; }
+
+    /* === ADMIN HEADER === */
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .admin-header h2 { font-size: 20px; }
+    .review-count { color: #888; font-size: 13px; margin-bottom: 16px; }
+
+    /* === ADMIN LINK === */
+    .admin-link {
+      display: block;
+      text-align: center;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #bbb;
+      text-decoration: none;
+    }
+    .admin-link:hover { color: #999; }
+
+    /* === QR SECTION === */
+    .qr-section { margin-top: 32px; text-align: center; }
+    .qr-section h3 { font-size: 14px; color: #bbb; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    #qr-canvas { display: inline-block; margin-bottom: 10px; }
+    .qr-label { font-size: 13px; color: #555; }
+    .btn-print {
+      margin-top: 10px;
+      display: inline-block;
+      width: auto;
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      background: #eee;
+      color: #333;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* === PRINT === */
+    @media print {
+      body * { visibility: hidden; }
+      #print-area, #print-area * { visibility: visible; }
+      #print-area {
+        position: fixed;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE: Review Form -->
+  <section id="page-review" class="page">
+    <div class="container">
+      <div style="text-align:center; margin-bottom:24px;">
+        <div class="emoji">🍔</div>
+        <h1>FOODIES</h1>
+        <p class="subtitle">College Fest · Leave a Review</p>
+      </div>
+
+      <div class="form-group">
+        <input id="input-name" type="text" placeholder="Your Name" maxlength="60" />
+      </div>
+
+      <div class="stars" id="stars">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
+      </div>
+
+      <div class="form-group">
+        <textarea id="input-review" placeholder="Write your review..." maxlength="500"></textarea>
+      </div>
+
+      <button class="btn btn-primary" id="btn-submit">Submit Review</button>
+
+      <div id="msg-submit-success" class="msg msg-success">✅ Thank you! Your review was submitted.</div>
+      <div id="msg-submit-error"   class="msg msg-error">⚠️ Please fill in all fields and select a star rating.</div>
+      <div id="msg-submit-fail"    class="msg msg-error">❌ Submission failed. Please check your connection.</div>
+
+      <!-- QR Code (shown to stall owner for printing) -->
+      <div class="qr-section">
+        <h3>Your QR Code</h3>
+        <div id="qr-canvas"></div>
+        <p class="qr-label">🍔 FOODIES — Scan to review us!</p>
+        <button class="btn-print" onclick="window.print()">Print QR Code</button>
+      </div>
+
+      <!-- Print-only area -->
+      <div id="print-area" style="display:none;">
+        <div id="qr-print"></div>
+        <p style="margin-top:10px;font-size:16px;font-weight:700;">🍔 FOODIES — Scan to review us!</p>
+      </div>
+
+      <a href="#" class="admin-link" id="link-admin">Admin →</a>
+    </div>
+  </section>
+
+  <!-- PAGE: Admin Login -->
+  <section id="page-login" class="page">
+    <div class="container" style="max-width:360px;">
+      <div style="text-align:center; margin-bottom:28px; margin-top:40px;">
+        <div class="emoji">🔒</div>
+        <h1 style="font-size:22px; margin-top:8px;">Admin Login</h1>
+      </div>
+      <div class="form-group">
+        <input id="input-password" type="password" placeholder="Password" />
+      </div>
+      <button class="btn btn-dark" id="btn-login">Login</button>
+      <div id="msg-login-error" class="msg msg-error">Incorrect password.</div>
+      <a href="#" class="admin-link" id="link-back-review" style="margin-top:16px;">← Back to review</a>
+    </div>
+  </section>
+
+  <!-- PAGE: Admin Dashboard -->
+  <section id="page-admin" class="page">
+    <div class="container">
+      <div class="admin-header">
+        <h2>📋 Reviews</h2>
+        <button class="btn-danger" id="btn-logout">Logout</button>
+      </div>
+      <p class="review-count" id="review-count">Loading...</p>
+      <div id="reviews-list"></div>
+    </div>
+  </section>
+
+  <script>
+    // ── FIREBASE CONFIG (replace with your own) ──────────────────────────────
+    const firebaseConfig = {
+      apiKey:            "REPLACE_ME",
+      authDomain:        "REPLACE_ME",
+      projectId:         "REPLACE_ME",
+      storageBucket:     "REPLACE_ME",
+      messagingSenderId: "REPLACE_ME",
+      appId:             "REPLACE_ME"
+    };
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const ADMIN_PASSWORD = "ram123";
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // ── PAGE ROUTING ──────────────────────────────────────────────────────────
+    function showPage(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // ── STAR RATING ───────────────────────────────────────────────────────────
+    let selectedRating = 0;
+    const stars = document.querySelectorAll('.star');
+
+    stars.forEach(star => {
+      star.addEventListener('mouseover', () => highlightStars(+star.dataset.value));
+      star.addEventListener('mouseout',  () => highlightStars(selectedRating));
+      star.addEventListener('click',     () => { selectedRating = +star.dataset.value; highlightStars(selectedRating); });
+    });
+
+    function highlightStars(n) {
+      stars.forEach(s => s.classList.toggle('filled', +s.dataset.value <= n));
+    }
+
+    // ── SUBMIT REVIEW ─────────────────────────────────────────────────────────
+    document.getElementById('btn-submit').addEventListener('click', async () => {
+      hideAllMsgs();
+      const name   = document.getElementById('input-name').value.trim();
+      const text   = document.getElementById('input-review').value.trim();
+      const rating = selectedRating;
+
+      if (!name || !text || rating < 1) {
+        show('msg-submit-error');
+        return;
+      }
+
+      try {
+        await db.collection('reviews').add({
+          name,
+          rating,
+          text,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById('input-name').value   = '';
+        document.getElementById('input-review').value = '';
+        selectedRating = 0;
+        highlightStars(0);
+        show('msg-submit-success');
+      } catch (err) {
+        console.error(err);
+        show('msg-submit-fail');
+      }
+    });
+
+    // ── ADMIN LOGIN ───────────────────────────────────────────────────────────
+    document.getElementById('link-admin').addEventListener('click', e => {
+      e.preventDefault();
+      if (sessionStorage.getItem('admin') === '1') {
+        loadAdminDashboard();
+        showPage('page-admin');
+      } else {
+        showPage('page-login');
+      }
+    });
+
+    document.getElementById('link-back-review').addEventListener('click', e => {
+      e.preventDefault();
+      hideAllMsgs();
+      showPage('page-review');
+    });
+
+    document.getElementById('btn-login').addEventListener('click', () => {
+      hideAllMsgs();
+      const pw = document.getElementById('input-password').value;
+      if (pw === ADMIN_PASSWORD) {
+        sessionStorage.setItem('admin', '1');
+        document.getElementById('input-password').value = '';
+        loadAdminDashboard();
+        showPage('page-admin');
+      } else {
+        show('msg-login-error');
+      }
+    });
+
+    // Allow pressing Enter in password field
+    document.getElementById('input-password').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btn-login').click();
+    });
+
+    // ── ADMIN DASHBOARD ───────────────────────────────────────────────────────
+    function loadAdminDashboard() {
+      const list  = document.getElementById('reviews-list');
+      const count = document.getElementById('review-count');
+      list.innerHTML  = '<p style="color:#bbb;font-size:14px;">Loading...</p>';
+      count.textContent = '';
+
+      db.collection('reviews')
+        .orderBy('timestamp', 'desc')
+        .get()
+        .then(snapshot => {
+          count.textContent = snapshot.size + ' review' + (snapshot.size !== 1 ? 's' : '');
+          if (snapshot.empty) {
+            list.innerHTML = '<p style="color:#bbb;font-size:14px;">No reviews yet.</p>';
+            return;
+          }
+          list.innerHTML = '';
+          snapshot.forEach(doc => {
+            list.appendChild(buildReviewCard(doc.id, doc.data()));
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          list.innerHTML = '<p style="color:#e74c3c;font-size:14px;">Failed to load reviews.</p>';
+        });
+    }
+
+    function buildReviewCard(id, data) {
+      const card = document.createElement('div');
+      card.className = 'review-card';
+      card.id = 'card-' + id;
+
+      const stars    = '★'.repeat(data.rating) + '☆'.repeat(5 - data.rating);
+      const timeStr  = data.timestamp ? formatTime(data.timestamp.toDate()) : '—';
+
+      card.innerHTML = `
+        <div class="review-card-header">
+          <span class="review-name">${escapeHtml(data.name)}</span>
+          <button class="btn-danger" data-id="${id}">Delete</button>
+        </div>
+        <div class="review-stars">${stars}</div>
+        <div class="review-text">${escapeHtml(data.text)}</div>
+        <div class="review-time">${timeStr}</div>
+      `;
+
+      card.querySelector('.btn-danger').addEventListener('click', () => deleteReview(id));
+      return card;
+    }
+
+    function deleteReview(id) {
+      db.collection('reviews').doc(id).delete().then(() => {
+        const card = document.getElementById('card-' + id);
+        if (card) card.remove();
+        // Update count
+        const countEl = document.getElementById('review-count');
+        const n = document.querySelectorAll('.review-card').length;
+        countEl.textContent = n + ' review' + (n !== 1 ? 's' : '');
+      }).catch(err => console.error('Delete failed:', err));
+    }
+
+    // ── LOGOUT ────────────────────────────────────────────────────────────────
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      sessionStorage.removeItem('admin');
+      showPage('page-review');
+    });
+
+    // ── QR CODE ───────────────────────────────────────────────────────────────
+    function generateQR() {
+      const url = window.location.href.split('?')[0].split('#')[0]; // strip params/hash
+      new QRCode(document.getElementById('qr-canvas'), {
+        text: url,
+        width: 140,
+        height: 140,
+        colorDark: '#222',
+        colorLight: '#ffffff'
+      });
+      // Also generate a larger one for the print area
+      document.getElementById('print-area').style.display = 'block';
+      new QRCode(document.getElementById('qr-print'), {
+        text: url,
+        width: 250,
+        height: 250,
+        colorDark: '#000',
+        colorLight: '#ffffff'
+      });
+    }
+
+    // ── HELPERS ───────────────────────────────────────────────────────────────
+    function show(id) { document.getElementById(id).classList.add('show'); }
+
+    function hideAllMsgs() {
+      document.querySelectorAll('.msg').forEach(m => m.classList.remove('show'));
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function formatTime(date) {
+      const now   = new Date();
+      const isToday = date.toDateString() === now.toDateString();
+      const time  = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (isToday) return 'Today ' + time;
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + time;
+    }
+
+    // ── INIT ──────────────────────────────────────────────────────────────────
+    showPage('page-review');
+    generateQR();
+  </script>
+</body>
+</html>
