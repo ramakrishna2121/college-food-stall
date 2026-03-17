@@ -284,35 +284,47 @@
     .review-time  { color: #bbb; font-size: 11px; margin-top: 5px; }
     /* ── MOBILE RESPONSIVE ── */
     @media (max-width: 600px) {
-      /* Shrink graffiti banner on mobile */
-      .bg-graffiti { height: 32%; }
+      /* Lock entire page to viewport — no scrolling */
+      html, body { height: 100%; overflow: hidden; }
+
+      /* Shrink graffiti banner */
+      .bg-graffiti { height: 30%; }
       .g-word {
-        font-size: 13vw;
+        font-size: 12vw;
         -webkit-text-stroke: 3px #111;
-        text-shadow: 4px 4px 0 #111, -2px -2px 0 #111, 2px -2px 0 #111, -2px 2px 0 #111, 7px 8px 0 rgba(0,0,0,0.4);
+        text-shadow: 4px 4px 0 #111, -2px -2px 0 #111, 2px -2px 0 #111, -2px 2px 0 #111, 6px 7px 0 rgba(0,0,0,0.4);
       }
-      .g-v2 { font-size: 6vw; -webkit-text-stroke: 2px #111; }
+      .g-v2 { font-size: 5.5vw; -webkit-text-stroke: 2px #111; }
 
-      /* Less bottom padding so form sits comfortably */
-      #page-review.active { padding: 0 12px 60px; }
+      /* Form centered in lower 70%, with room for ART tag below */
+      #page-review.active {
+        height: 100vh;
+        overflow: hidden;
+        align-items: flex-end;
+        padding: 0 12px 80px;
+      }
 
-      /* Tighter card on mobile */
-      .form-card { padding: 18px 16px 14px; border-radius: 16px; }
-      .form-group { margin-bottom: 10px; }
-      input, textarea { padding: 10px 12px; font-size: 14px; }
-      textarea { height: 72px; }
-      .btn { padding: 12px; font-size: 14px; }
+      /* Compact card so it fits and ART is visible below */
+      .form-card { padding: 14px 14px 10px; border-radius: 16px; }
+      .form-header { margin-bottom: 8px; }
+      .form-group { margin-bottom: 8px; }
+      input, textarea { padding: 9px 12px; font-size: 14px; }
+      textarea { height: 62px; }
+      .stars { margin: 2px 0 8px; }
+      .star { font-size: 28px; }
+      .btn { padding: 11px; font-size: 14px; }
+      .admin-link { margin-top: 8px; }
 
-      /* Smaller side tags */
-      .tag-sv  { font-size: 7vw; left: 3%; top: 36%; }
-      .tag-art { font-size: 6vw; right: 3%; bottom: 8%; }
+      /* Move ART tag up so it shows above the form card */
+      .tag-art { bottom: 19%; right: 3%; font-size: 6vw; }
+      .tag-sv  { top: 32%; left: 3%; font-size: 7vw; }
 
-      /* Smaller clouds on mobile */
-      .cloud    { width: 70px; height: 28px; }
-      .cloud.lg { width: 84px; }
-      .cloud.sm { width: 52px; }
-      .cloud::before { width: 30px; height: 30px; top: -16px; left: 8px; }
-      .cloud::after  { width: 38px; height: 38px; top: -22px; left: 24px; }
+      /* Smaller clouds */
+      .cloud    { width: 68px; height: 26px; }
+      .cloud.lg { width: 82px; }
+      .cloud.sm { width: 50px; }
+      .cloud::before { width: 28px; height: 28px; top: -14px; left: 8px; }
+      .cloud::after  { width: 36px; height: 36px; top: -20px; left: 22px; }
     }
   </style>
 </head>
