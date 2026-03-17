@@ -3,172 +3,356 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FOODIES — Leave a Review</title>
+  <title>FOODIES 2.0 — Leave a Review</title>
 
-  <!-- Firebase (compat mode) -->
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-  <!-- QR Code generator -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
   <style>
-    /* === RESET & BASE === */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #fafafa;
-      color: #222;
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    /* === LAYOUT === */
-    .page { display: none; }
-    .page.active { display: block; }
-
-    .container {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 32px 16px;
+    /* ═══════════════════════════════════════
+       GRAFFITI BACKGROUND (always visible)
+    ═══════════════════════════════════════ */
+    #bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: #e8213a;
+      overflow: hidden;
     }
 
-    /* === TYPOGRAPHY === */
-    h1 { font-size: 28px; font-weight: 800; letter-spacing: 1px; }
-    .subtitle { color: #888; font-size: 13px; margin-top: 4px; }
-    .emoji { font-size: 40px; }
-
-    /* === FORM ELEMENTS === */
-    .form-group { margin-bottom: 16px; }
-    input, textarea {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid #ddd;
-      border-radius: 8px;
-      font-size: 15px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s;
+    /* Halftone dots */
+    #bg::after {
+      content: '';
+      position: absolute; inset: 0; z-index: 2;
+      background-image: radial-gradient(circle, rgba(0,0,0,0.2) 1.5px, transparent 1.5px);
+      background-size: 13px 13px;
+      pointer-events: none;
     }
-    input:focus, textarea:focus { border-color: #f5a623; }
-    textarea { height: 90px; resize: none; }
 
-    /* === BUTTONS === */
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.2s;
+    /* Corner panels */
+    .panel { position: absolute; z-index: 1; }
+    .panel::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(0,0,0,0.13) 1.5px, transparent 1.5px);
+      background-size: 11px 11px;
     }
-    .btn:hover { opacity: 0.88; }
-    .btn-primary { background: #f5a623; color: #fff; }
-    .btn-dark    { background: #333;    color: #fff; }
-    .btn-danger  { background: #e74c3c; color: #fff; padding: 6px 12px; width: auto; font-size: 13px; border-radius: 6px; }
+    .p-tl {
+      top: 0; left: 0; width: 48%; height: 50%;
+      background: #f5c518;
+      clip-path: polygon(0 0, 100% 0, 0 100%);
+    }
+    .p-tr {
+      top: 0; right: 0; width: 48%; height: 50%;
+      background: #4a8fd4;
+      clip-path: polygon(0 0, 100% 0, 100% 100%);
+    }
+    .p-bl {
+      bottom: 0; left: 0; width: 50%; height: 44%;
+      background: #2fa84f;
+      clip-path: polygon(0 0, 55% 100%, 0 100%);
+    }
+    .p-br {
+      bottom: 0; right: 0; width: 52%; height: 44%;
+      background: #f5a623;
+      clip-path: polygon(100% 0, 100% 100%, 30% 100%);
+    }
 
-    /* === STAR RATING === */
-    .stars { display: flex; justify-content: center; gap: 8px; margin: 8px 0 16px; }
-    .star {
-      font-size: 36px;
-      cursor: pointer;
-      color: #ddd;
-      transition: color 0.15s, transform 0.1s;
+    /* Clouds */
+    .cloud-row {
+      position: absolute; left: 0; right: 0; z-index: 5;
+      display: flex; justify-content: space-evenly;
+    }
+    .cloud-row.top    { top: -16px; }
+    .cloud-row.bottom { bottom: -16px; }
+
+    .cloud {
+      position: relative; flex-shrink: 0;
+      width: 88px; height: 34px;
+      background: #f0ede0;
+      border-radius: 50px;
+      border: 3.5px solid #111;
+    }
+    .cloud::before {
+      content: ''; position: absolute;
+      top: -20px; left: 10px;
+      width: 38px; height: 38px;
+      background: #f0ede0; border-radius: 50%;
+      border: 3.5px solid #111;
+    }
+    .cloud::after {
+      content: ''; position: absolute;
+      top: -28px; left: 30px;
+      width: 48px; height: 48px;
+      background: #f0ede0; border-radius: 50%;
+      border: 3.5px solid #111;
+    }
+    .cloud.sm { width: 66px; transform: scale(0.82); transform-origin: bottom center; }
+    .cloud.lg { width: 104px; }
+
+    /* Lightning bolts */
+    .bolt { position: absolute; z-index: 7; filter: drop-shadow(2px 3px 0 #111) drop-shadow(-1px -1px 0 #111); }
+    .bolt svg { display: block; }
+
+    /* Stars */
+    .bg-star {
+      position: absolute; z-index: 7;
+      font-size: 26px; color: transparent;
+      -webkit-text-stroke: 3px #111;
       user-select: none;
     }
-    .star.filled { color: #f5a623; }
-    .star:hover  { transform: scale(1.15); }
 
-    /* === MESSAGES === */
-    .msg { padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: none; }
-    .msg.show { display: block; }
-    .msg-success { background: #fef6e4; color: #b8740a; border: 1px solid #f5d99a; }
-    .msg-error   { background: #fdecea; color: #c0392b; border: 1px solid #f5c6c3; }
-
-    /* === REVIEW CARD (admin) === */
-    .review-card {
-      border: 1px solid #eee;
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 12px;
-      background: #fff;
+    /* SV tag */
+    .tag-sv {
+      position: absolute; z-index: 7;
+      left: 4%; top: 34%;
+      font-family: 'Bangers', cursive;
+      font-size: clamp(28px, 5vw, 54px);
+      letter-spacing: 4px;
+      color: #4ac8e8;
+      -webkit-text-stroke: 3px #111;
+      text-shadow: 4px 4px 0 #111;
+      transform: rotate(-4deg);
     }
-    .review-card-header {
+
+    /* ART tag */
+    .tag-art {
+      position: absolute; z-index: 7;
+      right: 5%; bottom: 11%;
+      font-family: 'Bangers', cursive;
+      font-size: clamp(24px, 4.5vw, 50px);
+      letter-spacing: 3px;
+      color: #d4f028;
+      -webkit-text-stroke: 3px #111;
+      text-shadow: 4px 5px 0 #111, 0 6px 0 rgba(0,0,0,0.4);
+      transform: rotate(3deg);
+    }
+
+    /* GRAFFITI 2.0 — top banner, above the form */
+    .bg-graffiti {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 42%;
+      z-index: 6;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none; user-select: none;
+    }
+    .g-row { display: flex; align-items: flex-end; gap: 12px; }
+    .g-word {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(48px, 9.5vw, 96px);
+      letter-spacing: 6px; line-height: 0.9;
+      color: #fff;
+      -webkit-text-stroke: 5px #111;
+      text-shadow:
+        7px 7px 0 #111, -3px -3px 0 #111,
+        3px -3px 0 #111, -3px 3px 0 #111,
+        10px 12px 0 rgba(0,0,0,0.4);
+    }
+    .g-v2 {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(26px, 4.8vw, 50px);
+      letter-spacing: 3px;
+      color: #f5c518;
+      -webkit-text-stroke: 3px #111;
+      text-shadow:
+        4px 4px 0 #111, -2px -2px 0 #111,
+        2px -2px 0 #111, -2px 2px 0 #111,
+        6px 6px 0 rgba(0,0,0,0.4);
+      margin-bottom: 4px;
+    }
+
+    /* ═══════════════════════════════════════
+       PAGES — always sit above the background
+    ═══════════════════════════════════════ */
+    .page { display: none; }
+
+    /* Review page: form in lower area, shifted up a bit */
+    #page-review.active {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 6px;
+      position: relative; z-index: 10;
+      min-height: 100vh;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0 16px 120px;
     }
-    .review-name  { font-weight: 700; font-size: 15px; }
-    .review-stars { color: #f5a623; font-size: 16px; margin: 2px 0 6px; }
-    .review-text  { color: #444; font-size: 14px; line-height: 1.5; }
-    .review-time  { color: #bbb; font-size: 11px; margin-top: 6px; }
 
-    /* === ADMIN HEADER === */
-    .admin-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .admin-header h2 { font-size: 20px; }
-    .review-count { color: #888; font-size: 13px; margin-bottom: 16px; }
-
-    /* === ADMIN LINK === */
-    .admin-link {
+    /* Admin pages: solid white bg covers the graffiti */
+    #page-login.active,
+    #page-admin.active {
       display: block;
-      text-align: center;
-      margin-top: 24px;
-      font-size: 12px;
-      color: #bbb;
-      text-decoration: none;
+      position: relative; z-index: 10;
+      min-height: 100vh;
+      background: #fafafa;
+      padding: 32px 16px;
     }
-    .admin-link:hover { color: #999; }
+    .admin-inner { max-width: 480px; margin: 0 auto; }
 
-    /* === QR SECTION === */
-    .qr-section { margin-top: 32px; text-align: center; }
-    .qr-section h3 { font-size: 14px; color: #bbb; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
-    #qr-canvas { display: inline-block; margin-bottom: 10px; }
-    .qr-label { font-size: 13px; color: #555; }
-    .btn-print {
-      margin-top: 10px;
-      display: inline-block;
-      width: auto;
-      padding: 8px 20px;
-      font-size: 13px;
-      font-weight: 600;
-      background: #eee;
-      color: #333;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+    /* ── FORM CARD — frosted glass ── */
+    .form-card {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px;
+      border: 3px solid rgba(255,255,255,0.9);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+      padding: 22px 22px 18px;
     }
 
-    /* === PRINT === */
-    @media print {
-      body * { visibility: hidden; }
-      #print-area { display: block !important; }
-      #print-area, #print-area * { visibility: visible; }
-      #print-area {
-        position: fixed;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-      }
+    .form-header { text-align: center; margin-bottom: 14px; }
+    .subtitle {
+      color: #555; font-size: 11px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
     }
+
+    .form-group { margin-bottom: 12px; }
+    input, textarea {
+      width: 100%; padding: 11px 13px;
+      border: 2px solid #ddd; border-radius: 10px;
+      font-size: 14px; font-family: inherit;
+      outline: none; background: #fff; color: #222;
+      transition: border-color 0.2s;
+    }
+    input:focus, textarea:focus { border-color: #e8213a; }
+    textarea { height: 80px; resize: none; }
+
+    .btn {
+      display: block; width: 100%; padding: 12px;
+      border: 2.5px solid #111; border-radius: 10px;
+      font-size: 15px; font-weight: 800; cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+      box-shadow: 4px 4px 0 #111; letter-spacing: 1px;
+    }
+    .btn:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 #111; }
+    .btn-primary { background: #e8213a; color: #fff; }
+    .btn-dark    { background: #222; color: #fff; }
+    .btn-danger  {
+      background: #e74c3c; color: #fff;
+      padding: 5px 11px; width: auto;
+      font-size: 12px; font-weight: 700;
+      border-radius: 6px; border: 2px solid #111;
+      box-shadow: 2px 2px 0 #111; cursor: pointer;
+    }
+    .btn-danger:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 #111; }
+
+    .stars { display: flex; justify-content: center; gap: 6px; margin: 4px 0 12px; }
+    .star {
+      font-size: 32px; cursor: pointer; color: #ddd;
+      -webkit-text-stroke: 1px #bbb;
+      transition: color 0.15s, transform 0.1s; user-select: none;
+    }
+    .star.filled { color: #f5a623; -webkit-text-stroke: 1px #b8740a; }
+    .star:hover  { transform: scale(1.2); }
+
+    .msg { padding: 10px 13px; border-radius: 8px; font-size: 13px; margin-top: 10px; display: none; font-weight: 600; }
+    .msg.show { display: block; }
+    .msg-success { background: #fef6e4; color: #b8740a; border: 2px solid #f5d99a; }
+    .msg-error   { background: #fdecea; color: #c0392b; border: 2px solid #f5c6c3; }
+
+    .admin-link {
+      display: block; text-align: center;
+      margin-top: 14px; font-size: 12px;
+      color: rgba(255,255,255,0.7); text-decoration: none;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+    }
+    .admin-link:hover { color: #fff; }
+
+    /* Admin page elements */
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .admin-header h2 { font-size: 20px; font-weight: 800; }
+    .review-count { color: #888; font-size: 13px; margin-bottom: 14px; }
+
+    .review-card {
+      border: 1.5px solid #eee; border-radius: 10px;
+      padding: 14px; margin-bottom: 10px;
+      background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .review-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+    .review-name  { font-weight: 700; font-size: 14px; }
+    .review-stars { color: #f5a623; font-size: 15px; margin: 2px 0 5px; }
+    .review-text  { color: #444; font-size: 13px; line-height: 1.5; }
+    .review-time  { color: #bbb; font-size: 11px; margin-top: 5px; }
   </style>
 </head>
 <body>
 
-  <!-- PAGE: Review Form -->
+  <!-- ══ GRAFFITI BACKGROUND (always visible) ══ -->
+  <div id="bg" aria-hidden="true">
+    <div class="panel p-tl"></div>
+    <div class="panel p-tr"></div>
+    <div class="panel p-bl"></div>
+    <div class="panel p-br"></div>
+
+    <div class="cloud-row top">
+      <div class="cloud sm"></div><div class="cloud"></div>
+      <div class="cloud lg"></div><div class="cloud"></div>
+      <div class="cloud lg"></div><div class="cloud sm"></div>
+      <div class="cloud"></div><div class="cloud sm"></div>
+    </div>
+    <div class="cloud-row bottom">
+      <div class="cloud lg"></div><div class="cloud sm"></div>
+      <div class="cloud"></div><div class="cloud lg"></div>
+      <div class="cloud sm"></div><div class="cloud"></div>
+      <div class="cloud lg"></div><div class="cloud sm"></div>
+    </div>
+
+    <!-- Lightning bolt top-right -->
+    <div class="bolt" style="top:6%;right:17%;width:54px;height:74px;">
+      <svg viewBox="0 0 56 76" width="54" height="74">
+        <defs>
+          <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ffe566"/>
+            <stop offset="100%" stop-color="#e8900a"/>
+          </linearGradient>
+        </defs>
+        <polygon points="34,0 56,0 22,40 46,40 0,76 14,40 0,40" fill="#111"/>
+        <polygon points="32,2 54,2 20,40 44,40 2,74 12,40 2,40" fill="url(#bg1)"/>
+      </svg>
+    </div>
+
+    <!-- Lightning bolt bottom-left -->
+    <div class="bolt" style="bottom:14%;left:31%;width:44px;height:60px;transform:rotate(12deg);">
+      <svg viewBox="0 0 56 76" width="44" height="60">
+        <defs>
+          <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ffe566"/>
+            <stop offset="100%" stop-color="#e8900a"/>
+          </linearGradient>
+        </defs>
+        <polygon points="34,0 56,0 22,40 46,40 0,76 14,40 0,40" fill="#111"/>
+        <polygon points="32,2 54,2 20,40 44,40 2,74 12,40 2,40" fill="url(#bg2)"/>
+      </svg>
+    </div>
+
+    <div class="bg-star" style="top:40%;left:17%;">✦</div>
+    <div class="bg-star" style="bottom:28%;right:22%;font-size:18px;">✦</div>
+
+    <div class="tag-sv">SV</div>
+    <div class="tag-art">ART</div>
+
+    <div class="bg-graffiti">
+      <div class="g-row">
+        <span class="g-word">GRAFFITI</span>
+        <span class="g-v2">2.0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: Review Form ══ -->
   <section id="page-review" class="page">
-    <div class="container">
-      <div style="text-align:center; margin-bottom:24px;">
-        <div class="emoji">🍔</div>
-        <h1>FOODIES</h1>
-        <p class="subtitle">College Fest · Leave a Review</p>
+    <div class="form-card">
+      <div class="form-header">
+        <p class="subtitle">⭐ College Fest · Leave a Review ⭐</p>
       </div>
 
       <div class="form-group">
@@ -190,33 +374,19 @@
       <button class="btn btn-primary" id="btn-submit">Submit Review</button>
 
       <div id="msg-submit-success" class="msg msg-success">✅ Thank you! Your review was submitted.</div>
-      <div id="msg-submit-error"   class="msg msg-error">⚠️ Please fill in all fields and select a star rating.</div>
-      <div id="msg-submit-fail"    class="msg msg-error">❌ Submission failed. Please check your connection.</div>
-
-      <!-- QR Code (shown to stall owner for printing) -->
-      <div class="qr-section">
-        <h3>Your QR Code</h3>
-        <div id="qr-canvas"></div>
-        <p class="qr-label">🍔 FOODIES — Scan to review us!</p>
-        <button class="btn-print" onclick="window.print()">Print QR Code</button>
-      </div>
-
-      <!-- Print-only area -->
-      <div id="print-area" style="display:none;">
-        <div id="qr-print"></div>
-        <p style="margin-top:10px;font-size:16px;font-weight:700;">🍔 FOODIES — Scan to review us!</p>
-      </div>
+      <div id="msg-submit-error"   class="msg msg-error">⚠️ Fill in all fields and pick a star rating.</div>
+      <div id="msg-submit-fail"    class="msg msg-error">❌ Submission failed. Check your connection.</div>
 
       <a href="#" class="admin-link" id="link-admin">Admin →</a>
     </div>
   </section>
 
-  <!-- PAGE: Admin Login -->
+  <!-- ══ PAGE: Admin Login ══ -->
   <section id="page-login" class="page">
-    <div class="container" style="max-width:360px;">
-      <div style="text-align:center; margin-bottom:28px; margin-top:40px;">
-        <div class="emoji">🔒</div>
-        <h1 style="font-size:22px; margin-top:8px;">Admin Login</h1>
+    <div class="admin-inner">
+      <div style="text-align:center;margin-bottom:28px;margin-top:20px;">
+        <div style="font-size:36px;">🔒</div>
+        <h1 style="font-size:22px;font-weight:800;margin-top:8px;">Admin Login</h1>
       </div>
       <div class="form-group">
         <input id="input-password" type="password" placeholder="Password" />
@@ -227,9 +397,9 @@
     </div>
   </section>
 
-  <!-- PAGE: Admin Dashboard -->
+  <!-- ══ PAGE: Admin Dashboard ══ -->
   <section id="page-admin" class="page">
-    <div class="container">
+    <div class="admin-inner">
       <div class="admin-header">
         <h2>📋 Reviews</h2>
         <button class="btn-danger" id="btn-logout">Logout</button>
@@ -240,7 +410,6 @@
   </section>
 
   <script>
-    // ── FIREBASE CONFIG (replace with your own) ──────────────────────────────
     const firebaseConfig = {
       apiKey:            "AIzaSyBrUJuNl2zoGjr8UzzMHDPS121apPzc08g",
       authDomain:        "college-fest-stall.firebaseapp.com",
@@ -249,7 +418,6 @@
       messagingSenderId: "696660328478",
       appId:             "1:696660328478:web:91bc121bd835f107a9ee0f"
     };
-    // ─────────────────────────────────────────────────────────────────────────
 
     const ADMIN_PASSWORD = "ram123";
 
@@ -283,16 +451,11 @@
       const text   = document.getElementById('input-review').value.trim();
       const rating = selectedRating;
 
-      if (!name || !text || rating < 1) {
-        show('msg-submit-error');
-        return;
-      }
+      if (!name || !text || rating < 1) { show('msg-submit-error'); return; }
 
       try {
         await db.collection('reviews').add({
-          name,
-          rating,
-          text,
+          name, rating, text,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         document.getElementById('input-name').value   = '';
@@ -310,17 +473,14 @@
     document.getElementById('link-admin').addEventListener('click', e => {
       e.preventDefault();
       if (sessionStorage.getItem('admin') === '1') {
-        loadAdminDashboard();
-        showPage('page-admin');
+        loadAdminDashboard(); showPage('page-admin');
       } else {
         showPage('page-login');
       }
     });
 
     document.getElementById('link-back-review').addEventListener('click', e => {
-      e.preventDefault();
-      hideAllMsgs();
-      showPage('page-review');
+      e.preventDefault(); hideAllMsgs(); showPage('page-review');
     });
 
     document.getElementById('btn-login').addEventListener('click', () => {
@@ -329,14 +489,12 @@
       if (pw === ADMIN_PASSWORD) {
         sessionStorage.setItem('admin', '1');
         document.getElementById('input-password').value = '';
-        loadAdminDashboard();
-        showPage('page-admin');
+        loadAdminDashboard(); showPage('page-admin');
       } else {
         show('msg-login-error');
       }
     });
 
-    // Allow pressing Enter in password field
     document.getElementById('input-password').addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('btn-login').click();
     });
@@ -345,12 +503,10 @@
     function loadAdminDashboard() {
       const list  = document.getElementById('reviews-list');
       const count = document.getElementById('review-count');
-      list.innerHTML  = '<p style="color:#bbb;font-size:14px;">Loading...</p>';
+      list.innerHTML = '<p style="color:#bbb;font-size:14px;">Loading...</p>';
       count.textContent = '';
 
-      db.collection('reviews')
-        .orderBy('timestamp', 'desc')
-        .get()
+      db.collection('reviews').orderBy('timestamp', 'desc').get()
         .then(snapshot => {
           count.textContent = snapshot.size + ' review' + (snapshot.size !== 1 ? 's' : '');
           if (snapshot.empty) {
@@ -358,9 +514,7 @@
             return;
           }
           list.innerHTML = '';
-          snapshot.forEach(doc => {
-            list.appendChild(buildReviewCard(doc.id, doc.data()));
-          });
+          snapshot.forEach(doc => list.appendChild(buildReviewCard(doc.id, doc.data())));
         })
         .catch(err => {
           console.error(err);
@@ -372,21 +526,18 @@
       const card = document.createElement('div');
       card.className = 'review-card';
       card.id = 'card-' + id;
-
       const safeRating = Math.min(5, Math.max(0, Math.round(data.rating) || 0));
-      const stars    = '★'.repeat(safeRating) + '☆'.repeat(5 - safeRating);
-      const timeStr  = data.timestamp ? formatTime(data.timestamp.toDate()) : '—';
-
+      const starStr = '★'.repeat(safeRating) + '☆'.repeat(5 - safeRating);
+      const timeStr = data.timestamp ? formatTime(data.timestamp.toDate()) : '—';
       card.innerHTML = `
         <div class="review-card-header">
           <span class="review-name">${escapeHtml(String(data.name || ''))}</span>
           <button class="btn-danger" data-id="${id}">Delete</button>
         </div>
-        <div class="review-stars">${stars}</div>
+        <div class="review-stars">${starStr}</div>
         <div class="review-text">${escapeHtml(String(data.text || ''))}</div>
         <div class="review-time">${timeStr}</div>
       `;
-
       card.querySelector('.btn-danger').addEventListener('click', () => deleteReview(id));
       return card;
     }
@@ -395,61 +546,31 @@
       db.collection('reviews').doc(id).delete().then(() => {
         const card = document.getElementById('card-' + id);
         if (card) card.remove();
-        // Update count
-        const countEl = document.getElementById('review-count');
         const n = document.querySelectorAll('.review-card').length;
-        countEl.textContent = n + ' review' + (n !== 1 ? 's' : '');
+        document.getElementById('review-count').textContent = n + ' review' + (n !== 1 ? 's' : '');
       }).catch(err => console.error('Delete failed:', err));
     }
 
     // ── LOGOUT ────────────────────────────────────────────────────────────────
     document.getElementById('btn-logout').addEventListener('click', () => {
-      sessionStorage.removeItem('admin');
-      showPage('page-review');
+      sessionStorage.removeItem('admin'); showPage('page-review');
     });
-
-    // ── QR CODE ───────────────────────────────────────────────────────────────
-    function generateQR() {
-      const url = window.location.href.split('?')[0].split('#')[0]; // strip params/hash
-      new QRCode(document.getElementById('qr-canvas'), {
-        text: url,
-        width: 140,
-        height: 140,
-        colorDark: '#222',
-        colorLight: '#ffffff'
-      });
-      // Also generate a larger one for the print area (stays hidden on screen, shown only in @media print)
-      new QRCode(document.getElementById('qr-print'), {
-        text: url,
-        width: 250,
-        height: 250,
-        colorDark: '#000',
-        colorLight: '#ffffff'
-      });
-    }
 
     // ── HELPERS ───────────────────────────────────────────────────────────────
     function show(id) { document.getElementById(id).classList.add('show'); }
-
-    function hideAllMsgs() {
-      document.querySelectorAll('.msg').forEach(m => m.classList.remove('show'));
-    }
-
+    function hideAllMsgs() { document.querySelectorAll('.msg').forEach(m => m.classList.remove('show')); }
     function escapeHtml(str) {
       return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
-
     function formatTime(date) {
-      const now   = new Date();
-      const isToday = date.toDateString() === now.toDateString();
-      const time  = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      if (isToday) return 'Today ' + time;
+      const now = new Date();
+      const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (date.toDateString() === now.toDateString()) return 'Today ' + time;
       return date.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + time;
     }
 
     // ── INIT ──────────────────────────────────────────────────────────────────
     showPage('page-review');
-    generateQR();
   </script>
 </body>
 </html>
