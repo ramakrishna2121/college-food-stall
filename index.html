@@ -282,6 +282,38 @@
     .review-stars { color: #f5a623; font-size: 15px; margin: 2px 0 5px; }
     .review-text  { color: #444; font-size: 13px; line-height: 1.5; }
     .review-time  { color: #bbb; font-size: 11px; margin-top: 5px; }
+    /* ── MOBILE RESPONSIVE ── */
+    @media (max-width: 600px) {
+      /* Shrink graffiti banner on mobile */
+      .bg-graffiti { height: 32%; }
+      .g-word {
+        font-size: 13vw;
+        -webkit-text-stroke: 3px #111;
+        text-shadow: 4px 4px 0 #111, -2px -2px 0 #111, 2px -2px 0 #111, -2px 2px 0 #111, 7px 8px 0 rgba(0,0,0,0.4);
+      }
+      .g-v2 { font-size: 6vw; -webkit-text-stroke: 2px #111; }
+
+      /* Less bottom padding so form sits comfortably */
+      #page-review.active { padding: 0 12px 60px; }
+
+      /* Tighter card on mobile */
+      .form-card { padding: 18px 16px 14px; border-radius: 16px; }
+      .form-group { margin-bottom: 10px; }
+      input, textarea { padding: 10px 12px; font-size: 14px; }
+      textarea { height: 72px; }
+      .btn { padding: 12px; font-size: 14px; }
+
+      /* Smaller side tags */
+      .tag-sv  { font-size: 7vw; left: 3%; top: 36%; }
+      .tag-art { font-size: 6vw; right: 3%; bottom: 8%; }
+
+      /* Smaller clouds on mobile */
+      .cloud    { width: 70px; height: 28px; }
+      .cloud.lg { width: 84px; }
+      .cloud.sm { width: 52px; }
+      .cloud::before { width: 30px; height: 30px; top: -16px; left: 8px; }
+      .cloud::after  { width: 38px; height: 38px; top: -22px; left: 24px; }
+    }
   </style>
 </head>
 <body>
