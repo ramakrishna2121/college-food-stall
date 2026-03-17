@@ -123,51 +123,72 @@
       transform: rotate(-4deg);
     }
 
-    /* ART tag */
-    .tag-art {
-      position: absolute; z-index: 7;
-      right: 5%; bottom: 11%;
-      font-family: 'Bangers', cursive;
-      font-size: clamp(24px, 4.5vw, 50px);
-      letter-spacing: 3px;
-      color: #d4f028;
-      -webkit-text-stroke: 3px #111;
-      text-shadow: 4px 5px 0 #111, 0 6px 0 rgba(0,0,0,0.4);
-      transform: rotate(3deg);
-    }
-
-    /* GRAFFITI 2.0 — top banner, above the form */
+    /* ── STACKED TITLE: SV / GRAFFITI / ART 2.0 ── */
     .bg-graffiti {
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 42%;
+      top: 4%; left: 0; right: 0;
       z-index: 6;
       display: flex; align-items: center; justify-content: center;
       pointer-events: none; user-select: none;
     }
-    .g-row { display: flex; align-items: flex-end; gap: 12px; }
-    .g-word {
+    .g-stack {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 0;
+      line-height: 1;
+    }
+
+    /* SV — biggest */
+    .g-sv {
       font-family: 'Bangers', cursive;
-      font-size: clamp(48px, 9.5vw, 96px);
-      letter-spacing: 6px; line-height: 0.9;
-      color: #fff;
+      font-size: clamp(80px, 16vw, 160px);
+      letter-spacing: 10px;
+      color: #4ac8e8;
       -webkit-text-stroke: 5px #111;
       text-shadow:
         7px 7px 0 #111, -3px -3px 0 #111,
         3px -3px 0 #111, -3px 3px 0 #111,
-        10px 12px 0 rgba(0,0,0,0.4);
+        10px 12px 0 rgba(0,0,0,0.45);
+      line-height: 0.9;
     }
-    .g-v2 {
+
+    /* GRAFFITI — medium */
+    .g-word {
       font-family: 'Bangers', cursive;
-      font-size: clamp(26px, 4.8vw, 50px);
-      letter-spacing: 3px;
-      color: #f5c518;
+      font-size: clamp(36px, 8vw, 80px);
+      letter-spacing: 6px; line-height: 1;
+      color: #fff;
+      -webkit-text-stroke: 4px #111;
+      text-shadow:
+        5px 5px 0 #111, -2px -2px 0 #111,
+        2px -2px 0 #111, -2px 2px 0 #111,
+        8px 9px 0 rgba(0,0,0,0.4);
+    }
+
+    /* ART 2.0 row — smallest */
+    .g-art-row {
+      display: flex; align-items: flex-end; gap: 8px;
+    }
+    .g-art {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(28px, 5.5vw, 56px);
+      letter-spacing: 4px;
+      color: #d4f028;
       -webkit-text-stroke: 3px #111;
       text-shadow:
         4px 4px 0 #111, -2px -2px 0 #111,
         2px -2px 0 #111, -2px 2px 0 #111,
-        6px 6px 0 rgba(0,0,0,0.4);
-      margin-bottom: 4px;
+        6px 7px 0 rgba(0,0,0,0.4);
+    }
+    .g-v2 {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(18px, 3.5vw, 36px);
+      letter-spacing: 2px;
+      color: #f5c518;
+      -webkit-text-stroke: 2px #111;
+      text-shadow:
+        3px 3px 0 #111, -1px -1px 0 #111,
+        1px -1px 0 #111, -1px 1px 0 #111;
+      margin-bottom: 3px;
     }
 
     /* ═══════════════════════════════════════
@@ -296,12 +317,15 @@
       }
       .g-v2 { font-size: 5.5vw; -webkit-text-stroke: 2px #111; }
 
-      /* Form centered in lower 70%, with room for ART tag below */
+      /* Form sits in center-bottom area, title visible above */
       #page-review.active {
         height: 100vh;
         overflow: hidden;
-        align-items: flex-end;
-        padding: 0 12px 80px;
+        align-items: center;
+        padding-top: 46vh;
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-bottom: 0;
       }
 
       /* Compact card so it fits and ART is visible below */
@@ -315,9 +339,11 @@
       .btn { padding: 11px; font-size: 14px; }
       .admin-link { margin-top: 8px; }
 
-      /* Move ART tag up so it shows above the form card */
-      .tag-art { bottom: 19%; right: 3%; font-size: 6vw; }
-      .tag-sv  { top: 32%; left: 3%; font-size: 7vw; }
+      /* Shrink stacked title on mobile */
+      .g-sv   { font-size: 22vw; -webkit-text-stroke: 4px #111; }
+      .g-word { font-size: 11vw; -webkit-text-stroke: 3px #111; }
+      .g-art  { font-size: 8vw;  -webkit-text-stroke: 2px #111; }
+      .g-v2   { font-size: 5vw;  -webkit-text-stroke: 2px #111; }
 
       /* Smaller clouds */
       .cloud    { width: 68px; height: 26px; }
@@ -381,13 +407,15 @@
     <div class="bg-star" style="top:40%;left:17%;">✦</div>
     <div class="bg-star" style="bottom:28%;right:22%;font-size:18px;">✦</div>
 
-    <div class="tag-sv">SV</div>
-    <div class="tag-art">ART</div>
-
+    <!-- SV / GRAFFITI / ART 2.0 stacked title at top -->
     <div class="bg-graffiti">
-      <div class="g-row">
-        <span class="g-word">GRAFFITI</span>
-        <span class="g-v2">2.0</span>
+      <div class="g-stack">
+        <div class="g-sv">SV</div>
+        <div class="g-word">GRAFFITI</div>
+        <div class="g-art-row">
+          <span class="g-art">ART</span>
+          <span class="g-v2">2.0</span>
+        </div>
       </div>
     </div>
   </div>
